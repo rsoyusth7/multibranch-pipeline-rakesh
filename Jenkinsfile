@@ -2,31 +2,52 @@ pipeline {
     agent any
 
     stages {
-        stage('Setup') {
+        stage('Setup Venv') {
             steps {
                 echo "Building branch: ${env.BRANCH_NAME}"
-                // Install dependencies
-                sh 'pip install flask pytest'
+                // Create venv and install requirements
+                // We use '&&' to ensure commands run in the same shell session context logic if needed, 
+                // but usually inside one sh block is safest for activation.
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                echo "Running Unit Tests on ${env.BRANCH_NAME}..."
-                // Run the test file
-                sh 'pytest test_app.py'
+                echo "Running Tests..."
+                // Must activate venv again because each 'sh' block is a new shell
+                sh '''
+                    . venv/bin/activate
+                    pytest test_app.py
+                '''
             }
         }
 
         stage('Deploy (Main Only)') {
-            // This stage ONLY runs if we are on the 'main' branch
+            // Only runs if the branch is 'main'
             when {
                 branch 'main'
             }
             steps {
-                echo ">>> Simulating Deploy to Production..."
-                echo "Deployment Success!"
+                echo ">>> Deploying Production Build..."
+                // Example of running a script using the venv
+                sh '''
+                    . venv/bin/activate
+                    echo "Deploying version for ${env.BRANCH_NAME}"
+                '''
             }
+        }
+    }
+    
+    post {
+        always {
+            // Good practice: Clean up the workspace to save disk space
+            cleanWs()
         }
     }
 }

@@ -5,4 +5,4 @@ def test_route():
     client = app.test_client()
     response = client.get('/')
     assert response.status_code == 200
-    assert b"Hello, Multibranch Pipeline!" in response.data
+    assert b"Isolated Venv" in response.data
